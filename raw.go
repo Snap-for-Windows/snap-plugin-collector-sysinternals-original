@@ -51,6 +51,10 @@ func main() {
 	//It is expected that after the Name of the process there is 2 spaces
 	//Otherwise there may not be two spaces
 
+	// get how many elements are in the slice
+	slicenumber := len(stringSlice)
+	fmt.Println(slicenumber)
+
 	//So first get up to two spaces and then get single spaces
 	for _, Selement := range stringSlice {
 		nameSplit := strings.Index(Selement, "  ")
@@ -59,34 +63,37 @@ func main() {
 
 		Selement = Selement[nameSplit:len(Selement)]
 		Selement = strings.Trim(Selement, " ")
-		// fmt.Println(Selement)
+		//fmt.Println(Selement)
 		number := strings.Index(Selement, " ")
 		stringMap := make(map[string]string)
 
-		if number != 0 && len(Selement) != 0 {
-			//do this in a while loop (instead of if loop)
-			stringMap["Name"] = SelementName
+		fmt.Println(number)
+		stringMap["Name"] = SelementName
 
-			stringMap["Pid"] = Selement[0:1]
-			Selement = Selement[number:len(Selement)]
-			Selement = strings.Trim(Selement, " ")
+		stringMap["Pid"] = Selement[0:1]
+		Selement = Selement[number:len(Selement)]
+		Selement = strings.Trim(Selement, " ")
+		//fmt.Println(Selement)
 
-			stringMap["Pri"] = Selement[0:1]
-			Selement = Selement[number:len(Selement)]
-			Selement = strings.Trim(Selement, " ")
+		stringMap["Pri"] = Selement[0:1]
+		Selement = Selement[number:len(Selement)]
+		Selement = strings.Trim(Selement, " ")
+		//fmt.Println(Selement)
 
-			stringMap["Thd"] = Selement[0:1]
-			Selement = Selement[number:len(Selement)]
-			Selement = strings.Trim(Selement, " ")
+		stringMap["Thd"] = Selement[0:1]
+		Selement = Selement[number:len(Selement)]
+		Selement = strings.Trim(Selement, " ")
 
-			stringMap["Hnd"] = Selement[0:1]
-			Selement = Selement[number:len(Selement)]
-			Selement = strings.Trim(Selement, " ")
+		stringMap["Hnd"] = Selement[0:1]
+		Selement = Selement[number:len(Selement)]
+		Selement = strings.Trim(Selement, " ")
 
-			stringMap["Priv"] = Selement[0:1]
-			Selement = Selement[number:len(Selement)]
-			Selement = strings.Trim(Selement, " ")
-		}
+		stringMap["Priv"] = Selement[0:1]
+		Selement = Selement[number:len(Selement)]
+		Selement = strings.Trim(Selement, " ")
+
+		//remove the, now empty, string from the slice
+		//Selement = append(Selement[:0], Selement[1:]...)
 		// for key, value := range stringMap {
 		// 	fmt.Println("Key: ", key, "Value: ", value)
 		// }
