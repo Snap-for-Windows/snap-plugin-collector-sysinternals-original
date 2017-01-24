@@ -1,21 +1,108 @@
 package main
 
-import "os/exec"
+import (
+	"archive/zip"
+	"bytes"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"os/exec"
+	"path"
+	"path/filepath"
+	"strconv"
+	"strings"
+)
 
-import "os"
-import "io"
-import "fmt"
-import "strings"
-import "strconv"
-import "bytes"
+// Unzip : unzip zip folders
+func Unzip(src, dest string) error {
+	r, err := zip.OpenReader(src)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err := r.Close(); err != nil {
+			panic(err)
+		}
+	}()
+
+	os.MkdirAll(dest, 0755)
+
+	// Closure to address file descriptors issue with all the deferred .Close() methods
+	extractAndWriteFile := func(f *zip.File) error {
+		rc, err := f.Open()
+		if err != nil {
+			return err
+		}
+		defer func() {
+			if err := rc.Close(); err != nil {
+				panic(err)
+			}
+		}()
+
+		path := filepath.Join(dest, f.Name)
+
+		if f.FileInfo().IsDir() {
+			os.MkdirAll(path, f.Mode())
+		} else {
+			os.MkdirAll(filepath.Dir(path), f.Mode())
+			f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
+			if err != nil {
+				return err
+			}
+			defer func() {
+				if err := f.Close(); err != nil {
+					panic(err)
+				}
+			}()
+
+			_, err = io.Copy(f, rc)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+
+	for _, f := range r.File {
+		err := extractAndWriteFile(f)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
 
 func main() {
+	ex, err := os.ex()
+	if err != nil {
+		panic(err)
+	}
+	exPath := path.Dir(ex)
+
 	// run(exec.Command("cmd", "-Command", "netstat"))
 	cmd := exec.Command("pslist")
 	stdout, err := cmd.Output()
-	fmt.Println("cmon!")
 	if err != nil {
 		println(err.Error())
+		fmt.Println("Attempting to Download Pslist")
+
+		out, err1 := os.Create("pstools.zip")
+		if err1 != nil {
+			fmt.Println("Unable to create file to download")
+		}
+		defer out.Close()
+		resp, err2 := http.Get("https://download.sysinternals.com/files/PSTools.zip")
+		if err2 != nil {
+			fmt.Println("Unable to get to URL")
+		}
+		defer resp.Body.Close()
+		location, err3 := io.Copy(out, resp.Body)
+		if err3 != nil {
+			fmt.Println("Unable to download")
+		}
+		Unzip(location, "%PATH")
 		return
 	}
 	birdistheword := string(stdout)
@@ -27,15 +114,15 @@ func main() {
 	var stringSlice []string
 	//This splits the output into lines
 	stringSlice = strings.Split(birdistheword, "\n")
-	fmt.Println(strconv.Itoa(len(stringSlice)) + " what up")
+	// fmt.Println(strconv.Itoa(len(stringSlice)) + " what up")
 	//This removes the additional information about the computer (the first 7 lines)
 	stringSlice = append(stringSlice[:0], stringSlice[8:]...)
-	fmt.Println(strconv.Itoa(len(stringSlice)) + " the second")
+	// fmt.Println(strconv.Itoa(len(stringSlice)) + " the second")
 
 	// var finalSlice []map[string]string
-	
+
 	// for _, Selement := range stringSlice {
-		
+
 	// 	tempSlice := strings.Split(Selement, "  ")
 	// 	for _, element := range tempSlice {
 	// 		stringMap := make(map[string]string)
@@ -52,52 +139,57 @@ func main() {
 	//Otherwise there may not be two spaces
 
 	// get how many elements are in the slice
-	slicenumber := len(stringSlice)
-	fmt.Println(slicenumber)
+	// slicenumber := len(stringSlice)
+	// fmt.Println(slicenumber)
 
-	//So first get up to two spaces and then get single spaces
-	for _, Selement := range stringSlice {
-		nameSplit := strings.Index(Selement, "  ")
-		SelementName := Selement[0:nameSplit]
-		fmt.Println(SelementName)
+	// nameCount := slicenumber
+	threadCount := 0
+	handleCount := 0
+	processCount := 0
 
-		Selement = Selement[nameSplit:len(Selement)]
-		Selement = strings.Trim(Selement, " ")
-		//fmt.Println(Selement)
-		number := strings.Index(Selement, " ")
-		stringMap := make(map[string]string)
+	//Go row by row and parse each row
+	//the last line of stringSlice is blank and so you must do len(stringSlice)-1 to avoid an error
+	for v := 0; v < len(stringSlice)-1; v++ {
+		item := stringSlice[v]
+		if v == len(stringSlice)-2 {
+			fmt.Println(item)
+		}
+		processCount++
 
-		fmt.Println(number)
-		stringMap["Name"] = SelementName
+		//get process name and remove it
+		nameSplit := strings.Index(item, "  ") //this gets the number of characters a name is
+		item = item[nameSplit:]                //This gets from the name to the end of item
+		item = strings.Trim(item, " ")         //this will trim the whitespace at the beginning
 
-		stringMap["Pid"] = Selement[0:1]
-		Selement = Selement[number:len(Selement)]
-		Selement = strings.Trim(Selement, " ")
-		//fmt.Println(Selement)
+		//get PID and remove
+		pidSplit := strings.Index(item, " ")
+		item = item[pidSplit:]
+		item = strings.Trim(item, " ")
 
-		stringMap["Pri"] = Selement[0:1]
-		Selement = Selement[number:len(Selement)]
-		Selement = strings.Trim(Selement, " ")
-		//fmt.Println(Selement)
+		//get Priority and remove
+		priSplit := strings.Index(item, " ")
+		item = item[priSplit:]
+		item = strings.Trim(item, " ")
 
-		stringMap["Thd"] = Selement[0:1]
-		Selement = Selement[number:len(Selement)]
-		Selement = strings.Trim(Selement, " ")
+		//get thread and add to overall thread count and then remove
+		thdSplit := strings.Index(item, " ")
+		thdCount, _ := strconv.Atoi(item[0:thdSplit]) //get the string that is the thread number and convert it
+		threadCount += thdCount                       //add the thread count to the master variable
+		item = item[thdSplit:]
+		item = strings.Trim(item, " ")
 
-		stringMap["Hnd"] = Selement[0:1]
-		Selement = Selement[number:len(Selement)]
-		Selement = strings.Trim(Selement, " ")
-
-		stringMap["Priv"] = Selement[0:1]
-		Selement = Selement[number:len(Selement)]
-		Selement = strings.Trim(Selement, " ")
-
-		//remove the, now empty, string from the slice
-		//Selement = append(Selement[:0], Selement[1:]...)
-		// for key, value := range stringMap {
-		// 	fmt.Println("Key: ", key, "Value: ", value)
-		// }
+		// fmt.Println(item)
+		//get handle and add to overall handle count and then remove
+		hndSplit := strings.Index(item, " ")
+		hndCount, _ := strconv.Atoi(item[0:hndSplit]) //get the string that is the handle number and convert it
+		handleCount += hndCount                       //add the handle count to the master variable
+		item = item[hndSplit:]
+		item = strings.Trim(item, " ")
 	}
+
+	fmt.Println(threadCount)
+	fmt.Println(processCount)
+	fmt.Println(handleCount)
 
 	var buffer bytes.Buffer
 	for _, theList := range stringSlice {
