@@ -77,18 +77,12 @@ func Unzip(src, dest string) error {
 }
 
 func main() {
-	// pwd, err := os.Getwd()
-	// if err != nil {
-	// 	fmt.Println(err)
-	// 	os.Exit(1)
-	// }
-
 	_, currentFilePath, _, _ := runtime.Caller(0)
 	dirpath := path.Dir(currentFilePath)
 	dirpath = strings.Replace(dirpath, "/", "\\", -1) //change the / to \ cause windows
 
 	// run(exec.Command("cmd", "-Command", "netstat"))
-	cmd := exec.Command("pslist")
+	cmd := exec.Command("pslist", "/accepteula") //maybe use the "no banner" to remove banner and clean up code a bit?
 	stdout, err := cmd.Output()
 
 	//if the pslist exe does not exist
