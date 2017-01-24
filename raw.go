@@ -10,8 +10,10 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // Unzip : unzip zip folders
@@ -75,11 +77,17 @@ func Unzip(src, dest string) error {
 }
 
 func main() {
-	ex, err := os.ex()
-	if err != nil {
-		panic(err)
-	}
-	exPath := path.Dir(ex)
+	// pwd, err := os.Getwd()
+	// if err != nil {
+	// 	fmt.Println(err)
+	// 	os.Exit(1)
+	// }
+
+	_, currentFilePath, _, _ := runtime.Caller(0)
+	dirpath := path.Dir(currentFilePath)
+	dirpath = strings.Replace(dirpath, "/", "\\", -1) //change the / to \ cause windows
+	fmt.Println(dirpath)
+	time.Sleep(time.Duration(3) * time.Second)
 
 	// run(exec.Command("cmd", "-Command", "netstat"))
 	cmd := exec.Command("pslist")
@@ -90,20 +98,23 @@ func main() {
 
 		out, err1 := os.Create("pstools.zip")
 		if err1 != nil {
-			fmt.Println("Unable to create file to download")
+			fmt.Println("Unable to create a generic pstools file to download into")
+			return
 		}
 		defer out.Close()
 		resp, err2 := http.Get("https://download.sysinternals.com/files/PSTools.zip")
 		if err2 != nil {
-			fmt.Println("Unable to get to URL")
+			fmt.Println("Unable to get to get to the URL")
+			return
 		}
 		defer resp.Body.Close()
-		location, err3 := io.Copy(out, resp.Body)
+		_, err3 := io.Copy(out, resp.Body)
 		if err3 != nil {
-			fmt.Println("Unable to download")
+			fmt.Println("Unable to download the file")
+			return
 		}
-		Unzip(location, "%PATH")
-		return
+		Unzip("pstools.zip", dirpath)
+		os.Remove("pstools")
 	}
 	birdistheword := string(stdout)
 	// print(birdistheword)
