@@ -13,10 +13,10 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-	"time"
 )
 
 // Unzip : unzip zip folders
+// http://stackoverflow.com/questions/20357223/easy-way-to-unzip-file-with-golang
 func Unzip(src, dest string) error {
 	r, err := zip.OpenReader(src)
 	if err != nil {
@@ -86,36 +86,51 @@ func main() {
 	_, currentFilePath, _, _ := runtime.Caller(0)
 	dirpath := path.Dir(currentFilePath)
 	dirpath = strings.Replace(dirpath, "/", "\\", -1) //change the / to \ cause windows
-	fmt.Println(dirpath)
-	time.Sleep(time.Duration(3) * time.Second)
 
 	// run(exec.Command("cmd", "-Command", "netstat"))
 	cmd := exec.Command("pslist")
 	stdout, err := cmd.Output()
+
+	//if the pslist exe does not exist
 	if err != nil {
-		println(err.Error())
+		println(err.Error()) //print out the error message
 		fmt.Println("Attempting to Download Pslist")
 
-		out, err1 := os.Create("pstools.zip")
+		//http://stackoverflow.com/questions/11692860/how-can-i-efficiently-download-a-large-file-using-go
+		out, err1 := os.Create("pstools.zip") //create a pstools.zip file to put data into
 		if err1 != nil {
-			fmt.Println("Unable to create a generic pstools file to download into")
-			return
+			err := os.Remove("pstools.zip") //remove the pstools zip file
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+			out, err11 := os.Create("pstools.zip")
+			if err11 != nil {
+				fmt.Println("Unable to create a generic pstools file to download into")
+				return
+			}
+			defer out.Close()
 		}
 		defer out.Close()
-		resp, err2 := http.Get("https://download.sysinternals.com/files/PSTools.zip")
+		resp, err2 := http.Get("https://download.sysinternals.com/files/PSTools.zip") //get URL and connect to it
 		if err2 != nil {
 			fmt.Println("Unable to get to get to the URL")
 			return
 		}
 		defer resp.Body.Close()
-		_, err3 := io.Copy(out, resp.Body)
+		_, err3 := io.Copy(out, resp.Body) // actually download
 		if err3 != nil {
 			fmt.Println("Unable to download the file")
 			return
 		}
-		Unzip("pstools.zip", dirpath)
-		os.Remove("pstools")
+
+		Unzip("pstools.zip", dirpath) //unzip the file and dump contents into directory
+		fmt.Println("Successfully downloaded Pslist")
 	}
+
+	cmd = exec.Command("pslist") //retry command after downloading sequence
+	stdout, _ = cmd.Output()
+
 	birdistheword := string(stdout)
 	// print(birdistheword)
 
@@ -150,8 +165,8 @@ func main() {
 	//Otherwise there may not be two spaces
 
 	// get how many elements are in the slice
-	// slicenumber := len(stringSlice)
-	// fmt.Println(slicenumber)
+	slicenumber := len(stringSlice)
+	fmt.Println(slicenumber)
 
 	// nameCount := slicenumber
 	threadCount := 0
