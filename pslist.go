@@ -2,7 +2,6 @@ package main
 
 import (
 	"archive/zip"
-	"bytes"
 	"fmt"
 	"io"
 	"net/http"
@@ -77,12 +76,11 @@ func Unzip(src, dest string) error {
 }
 
 func main() {
-	_, currentFilePath, _, _ := runtime.Caller(0)
+	_, currentFilePath, _, _ := runtime.Caller(0) //get the current directory
 	dirpath := path.Dir(currentFilePath)
 	dirpath = strings.Replace(dirpath, "/", "\\", -1) //change the / to \ cause windows
 
-	// run(exec.Command("cmd", "-Command", "netstat"))
-	cmd := exec.Command("pslist", "/accepteula") //maybe use the "no banner" to remove banner and clean up code a bit?
+	cmd := exec.Command("pslist", "/accepteula") // automatically accept eula if applicable, TODO use the "no banner" to remove banner and clean up code a bit?
 	stdout, err := cmd.Output()
 
 	//if the pslist exe does not exist
@@ -98,6 +96,7 @@ func main() {
 				fmt.Println(err)
 				return
 			}
+			//try one more time to download the tools
 			out, err11 := os.Create("pstools.zip")
 			if err11 != nil {
 				fmt.Println("Unable to create a generic pstools file to download into")
@@ -122,58 +121,23 @@ func main() {
 		fmt.Println("Successfully downloaded Pslist")
 	}
 
-	cmd = exec.Command("pslist") //retry command after downloading sequence
-	stdout, _ = cmd.Output()
-
-	birdistheword := string(stdout)
-	// print(birdistheword)
-
-	// row := strings.Fields(birdistheword)
-	// print(len(row))
+	cmd = exec.Command("pslist")   //retry command after downloading sequence
+	stdout, _ = cmd.Output()       //get the output of the command
+	pslistOutput := string(stdout) // turn the output into a string
 
 	var stringSlice []string
-	//This splits the output into lines
-	stringSlice = strings.Split(birdistheword, "\n")
-	// fmt.Println(strconv.Itoa(len(stringSlice)) + " what up")
-	//This removes the additional information about the computer (the first 7 lines)
-	stringSlice = append(stringSlice[:0], stringSlice[8:]...)
-	// fmt.Println(strconv.Itoa(len(stringSlice)) + " the second")
+	stringSlice = strings.Split(pslistOutput, "\n")           //This splits the output into lines in a Slice
+	stringSlice = append(stringSlice[:0], stringSlice[8:]...) //This removes the additional information about the computer (the first 7 lines), will be unnecessary if no banner works
 
-	// var finalSlice []map[string]string
-
-	// for _, Selement := range stringSlice {
-
-	// 	tempSlice := strings.Split(Selement, "  ")
-	// 	for _, element := range tempSlice {
-	// 		stringMap := make(map[string]string)
-	// 		fmt.Println(element)// stringMap["Name"] = element[1].String()
-	// 		// stringMap["Pid"] = element[2]
-	// 		// stringMap["Pri"] = element[3]
-	// 		finalSlice = append(finalSlice, stringMap)
-	// 	}
-	// }
-
-	//this is used to split the stuff in the slice into different slices
-	//This does not work!!
-	//It is expected that after the Name of the process there is 2 spaces
-	//Otherwise there may not be two spaces
-
-	// get how many elements are in the slice
-	slicenumber := len(stringSlice)
-	fmt.Println(slicenumber)
-
-	// nameCount := slicenumber
 	threadCount := 0
 	handleCount := 0
 	processCount := 0
 
 	//Go row by row and parse each row
-	//the last line of stringSlice is blank and so you must do len(stringSlice)-1 to avoid an error
+	//the last line of stringSlice is blank and so you must do len(stringSlice)-1 to avoid an out of bounds error
 	for v := 0; v < len(stringSlice)-1; v++ {
 		item := stringSlice[v]
-		if v == len(stringSlice)-2 {
-			fmt.Println(item)
-		}
+
 		processCount++
 
 		//get process name and remove it
@@ -211,33 +175,23 @@ func main() {
 	fmt.Println(processCount)
 	fmt.Println(handleCount)
 
-	var buffer bytes.Buffer
-	for _, theList := range stringSlice {
-		buffer.WriteString(theList)
-	}
-	print(buffer.String())
-	filename := "output.txt"
-	fmt.Println("writing: " + filename)
-	fo, err := os.Create(filename)
-	if err != nil {
-		fmt.Println(err)
-	}
-	n, err := io.WriteString(fo, buffer.String())
-	if err != nil {
-		fmt.Println(n, err)
-	}
-	fo.Close()
+	//Print out to output.txt for testing (unneeded when integrating with Snap)
+	// var buffer bytes.Buffer
+	// for _, theList := range stringSlice {
+	// 	buffer.WriteString(theList)
+	// }
+	// print(buffer.String())
+	// filename := "output.txt"
+	// fmt.Println("writing: " + filename)
+	// fo, err := os.Create(filename)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
+	// n, err := io.WriteString(fo, buffer.String())
+	// if err != nil {
+	// 	fmt.Println(n, err)
+	// }
+	// fo.Close()
 
 	//http://stackoverflow.com/questions/6182369/exec-a-shell-command-in-go
 }
-
-/*
-Check for pstools in the folder
-If it exists then try to update
-else report error
-
-Run tool(s)
-Get all the input
-Put it into rows by find the \n (vector)
-Then sort into columns
-*/
