@@ -1,4 +1,4 @@
-package main
+package sysinternals
 
 import (
 	"archive/zip"
@@ -12,7 +12,12 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+
+	"github.com/intelsdi-x/snap-plugin-lib-go/v1/plugin"
 )
+
+// SysinternalsCollector implementation.  Needed even if empty
+type SysinternalsCollector struct{}
 
 // Unzip : unzip zip folders
 // http://stackoverflow.com/questions/20357223/easy-way-to-unzip-file-with-golang
@@ -75,11 +80,18 @@ func Unzip(src, dest string) error {
 	return nil
 }
 
-func main() {
+/*
+* CollectMetrics collects metrics for testing.
+* CollectMetrics() is be called by Snap when a task (which is collecting one+ of the metrics returned from the GetMetricTypes()) is started.
+* Input: A slice of all the metric types being collected.
+* Output: A slice (list) of the collected metrics as plugin.Metric with their values and an error if failure.
+ */
+func (SysinternalsCollector) CollectMetrics(mts []plugin.Metric) ([]plugin.Metric, error) {
 	_, currentFilePath, _, _ := runtime.Caller(0) //get the current directory
 	dirpath := path.Dir(currentFilePath)
 	dirpath = strings.Replace(dirpath, "/", "\\", -1) //change the / to \ cause windows
 
+	//http://stackoverflow.com/questions/6182369/exec-a-shell-command-in-go
 	cmd := exec.Command("pslist", "/accepteula") // automatically accept eula if applicable, TODO use the "no banner" to remove banner and clean up code a bit?
 	stdout, err := cmd.Output()
 
@@ -94,27 +106,24 @@ func main() {
 			err := os.Remove("pstools.zip") //remove the pstools zip file
 			if err != nil {
 				fmt.Println(err)
-				return
+				return nil, fmt.Errorf("Unable to create unique folder for downloading PsTools")
 			}
 			//try one more time to download the tools
 			out, err11 := os.Create("pstools.zip")
 			if err11 != nil {
-				fmt.Println("Unable to create a generic pstools file to download into")
-				return
+				return nil, fmt.Errorf("Unable to create a generic pstools file to download into")
 			}
 			defer out.Close()
 		}
 		defer out.Close()
 		resp, err2 := http.Get("https://download.sysinternals.com/files/PSTools.zip") //get URL and connect to it
 		if err2 != nil {
-			fmt.Println("Unable to get to get to the URL")
-			return
+			return nil, fmt.Errorf("Unable to get to get to the URL to download PsTools")
 		}
 		defer resp.Body.Close()
 		_, err3 := io.Copy(out, resp.Body) // actually download
 		if err3 != nil {
-			fmt.Println("Unable to download the file")
-			return
+			return nil, fmt.Errorf("Unable to download the file")
 		}
 
 		Unzip("pstools.zip", dirpath) //unzip the file and dump contents into directory
@@ -171,27 +180,56 @@ func main() {
 		item = strings.Trim(item, " ")
 	}
 
-	fmt.Println(threadCount)
-	fmt.Println(processCount)
-	fmt.Println(handleCount)
+	metrics := []plugin.Metric{}
+	pslistmetrics := make([]int, 0)
+	pslistmetrics = append(pslistmetrics, threadCount, handleCount, processCount)
 
-	//Print out to output.txt for testing (unneeded when integrating with Snap)
-	// var buffer bytes.Buffer
-	// for _, theList := range stringSlice {
-	// 	buffer.WriteString(theList)
-	// }
-	// print(buffer.String())
-	// filename := "output.txt"
-	// fmt.Println("writing: " + filename)
-	// fo, err := os.Create(filename)
-	// if err != nil {
-	// 	fmt.Println(err)
-	// }
-	// n, err := io.WriteString(fo, buffer.String())
-	// if err != nil {
-	// 	fmt.Println(n, err)
-	// }
-	// fo.Close()
+	metrics = append(metrics, pslistmetrics)
 
-	//http://stackoverflow.com/questions/6182369/exec-a-shell-command-in-go
+	return metrics, nil
+}
+
+/*
+ * GetMetricTypes returns a list of available metric types
+ * GetMetricTypes() is called when this plugin is loaded in order to populate the "metric catalog" (where Snap
+ * stores all of the available metrics for each plugin)
+ * Input: Config info. This information comes from global Snap config settings
+ * Output: A slice (list) of all plugin metrics, which are available to be collected by tasks
+ */
+func (SysinternalsCollector) GetMetricTypes(cfg plugin.Config) ([]plugin.Metric, error) {
+	// slice to store list of all available perfmon metrics
+	mts := []plugin.Metric{}
+
+	mts = append(mts, plugin.Metric{
+		Namespace: plugin.NewNamespace("intel", "sysinternals", "threadCount"),
+		Version:   1,
+	})
+
+	mts = append(mts, plugin.Metric{
+		Namespace: plugin.NewNamespace("intel", "sysinternals", "handleCount"),
+		Version:   1,
+	})
+	mts = append(mts, plugin.Metric{
+		Namespace: plugin.NewNamespace("intel", "sysinternals", "processCount"),
+		Version:   1,
+	})
+	return mts, nil
+}
+
+/*
+ * GetConfigPolicy() returns the config policy for this plugin
+ *   A config policy allows users to provide configuration info to the plugin and is provided in the task. Here we define what kind of config info this plugin can take and/or needs.
+ */
+func (SysinternalsCollector) GetConfigPolicy() (plugin.ConfigPolicy, error) {
+	policy := plugin.NewConfigPolicy()
+
+	// This rule is simply for unit testing, so I can pass in my own values for each metric rather than getting them from counters.go
+	policy.AddNewFloatRule([]string{"random", "float"},
+		"testfloat",
+		false,
+		plugin.SetMaxFloat(1000.0),
+		plugin.SetMinFloat(0.0))
+
+	// For now, assuming that perfmon has no configs. May need to add some if permissions becomes an issue.
+	return *policy, nil
 }
