@@ -19,6 +19,17 @@ import (
 // SysinternalsCollector implementation.  Needed even if empty
 type SysinternalsCollector struct{}
 
+//stringInNamespace are the metrics that we are looking for
+func stringInNamespace(givenString string) bool {
+	availableMetrics := []string{"threadCount", "handleCount", "processorCount"}
+	for _, metricName := range availableMetrics {
+		if metricName == givenString {
+			return true
+		}
+	}
+	return false
+}
+
 // Unzip : unzip zip folders
 // http://stackoverflow.com/questions/20357223/easy-way-to-unzip-file-with-golang
 func Unzip(src, dest string) error {
@@ -87,6 +98,8 @@ func Unzip(src, dest string) error {
 * Output: A slice (list) of the collected metrics as plugin.Metric with their values and an error if failure.
  */
 func (SysinternalsCollector) CollectMetrics(mts []plugin.Metric) ([]plugin.Metric, error) {
+	metrics := []plugin.Metric{} // Create a slice of MetricType objects. This is where the metrics requested by the task will be stored
+
 	_, currentFilePath, _, _ := runtime.Caller(0) //get the current directory
 	dirpath := path.Dir(currentFilePath)
 	dirpath = strings.Replace(dirpath, "/", "\\", -1) //change the / to \ cause windows
@@ -180,12 +193,38 @@ func (SysinternalsCollector) CollectMetrics(mts []plugin.Metric) ([]plugin.Metri
 		item = strings.Trim(item, " ")
 	}
 
-	metrics := []plugin.Metric{}
-	pslistmetrics := make([]int, 0)
-	pslistmetrics = append(pslistmetrics, threadCount, handleCount, processCount)
-
-	metrics = append(metrics, pslistmetrics)
-
+	metricNames := make([]string, 0)
+	for _, mt := range mts {
+		metricNames = append(metricNames, mt.Namespace[len(mt.Namespace)-1].Value)
+	}
+	// Iterate through each of the metrics specified by task to collect
+	for idx, mt := range mts {
+		if _, err := mt.Config.GetString("test"); err == nil {
+			continue
+		}
+		if mt.Namespace[len(mt.Namespace)-1].Value == "threadCount" {
+			if val, err := mt.Config.GetInt("testint"); err == nil {
+				mts[idx].Data = val
+			} else {
+				mts[idx].Data = threadCount
+			}
+			metrics = append(metrics, mts[idx])
+		} else if mt.Namespace[len(mt.Namespace)-1].Value == "handleCount" {
+			if val, err := mt.Config.GetInt("testint"); err == nil {
+				mts[idx].Data = val
+			} else {
+				mts[idx].Data = handleCount
+			}
+			metrics = append(metrics, mts[idx])
+		} else if mt.Namespace[len(mt.Namespace)-1].Value == "processCount" {
+			if val, err := mt.Config.GetInt("testint"); err == nil {
+				mts[idx].Data = val
+			} else {
+				mts[idx].Data = processCount
+			}
+			metrics = append(metrics, mts[idx])
+		}
+	}
 	return metrics, nil
 }
 
