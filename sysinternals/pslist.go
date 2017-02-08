@@ -19,16 +19,16 @@ import (
 // SysinternalsCollector implementation.  Needed even if empty
 type SysinternalsCollector struct{}
 
-//stringInNamespace are the metrics that we are looking for
-func stringInNamespace(givenString string) bool {
-	availableMetrics := []string{"threadCount", "handleCount", "processorCount"}
-	for _, metricName := range availableMetrics {
-		if metricName == givenString {
-			return true
-		}
-	}
-	return false
-}
+// //stringInNamespace are the metrics that we are looking for
+// func stringInNamespace(givenString string) bool {
+// 	availableMetrics := []string{"threadCount", "handleCount", "processorCount"}
+// 	for _, metricName := range availableMetrics {
+// 		if metricName == givenString {
+// 			return true
+// 		}
+// 	}
+// 	return false
+// }
 
 // Unzip : unzip zip folders
 // http://stackoverflow.com/questions/20357223/easy-way-to-unzip-file-with-golang
