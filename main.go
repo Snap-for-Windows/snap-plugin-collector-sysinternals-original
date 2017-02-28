@@ -18,6 +18,5 @@ func main() {
 	plugin.StartCollector(
 		sysinternals.SysinternalsCollector{},  
 		pluginName,               
-		pluginVersion               
-	)
+		pluginVersion)
 }
