@@ -59,6 +59,7 @@ To build this plugin through the Snap github repository:
   ```
   go build github.com\Snap-for-Windows\snap-plugin-collector-sysinternals
   ```
+
 ### Configuration and Usage
 1. Run snapteld.exe with the appropriate flags (example below)
 
