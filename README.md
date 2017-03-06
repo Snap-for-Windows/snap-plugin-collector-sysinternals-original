@@ -1,6 +1,24 @@
 # Snap Collector Plugin - SysInternals
+This Snap plugin collects a few metrics using pslist.exe (# of processes, threads, handles).  The script will also automatically download the executable from the Microsoft site.
+
+1. [Getting Started](#getting-started)
+  * [System Requirements](#system-requirements)
+  * [Installation](#installation)
+  * [Configuration and Usage](#configuration-and-usage)
+2. [Documentation](#documentation)
+  * [Collected Metrics](#collected-metrics)
+  * [Examples](#examples)
+3. [Community Support](#community-support)
+4. [Contributing](#contributing)
+5. [Known Issues](#known-issues)
+6. [License](#license-and-authors)
+7. [Acknowledgements](#acknowledgements)
 
 ## Getting Started
+
+### System Requirements 
+* [golang 1.7+](https://golang.org/dl/) (needed only for building as code is written in Go)
+
 ### Installation
 To build this plugin through the Snap github repository:
 
@@ -41,58 +59,20 @@ To build this plugin through the Snap github repository:
   ```
   go build github.com\Snap-for-Windows\snap-plugin-collector-sysinternals
   ```
-
-9. Run snapteld.exe with the appropriate flags (example below)
+### Configuration and Usage
+1. Run snapteld.exe with the appropriate flags (example below)
 
   ```
   snapteld.exe --plugin-trust 0 --log-level 1
   ```
 
-10. Load the plugin through snaptel.exe
+2. Load the plugin through snaptel.exe
 
   ```
   snaptel.exe plugin load snap-plugin-collector-sysinternals.exe
   ```
-11. Run the plugin using a task (the below example uses the Snap mock file plugin to output the data to a text file)
 
-  ```
-  { 
-      "version": 1,
-      "schedule": {
-          "type": "simple",
-          "interval": "30s"
-      },
-      "max-failures": 10,
-      "workflow": {
-          "collect": {
-              "metrics": {
-                  "/intel/sysinternals/handleCount": {},
-                  "/intel/sysinternals/processCount": {},
-                  "/intel/sysinternals/threadCount": {}
-              },
-              "process": [
-                  {
-                      "plugin_name": "passthru-grpc",
-                      "process": null,
-                      "publish": [
-                          {
-                              "plugin_name": "mock-file-grpc",
-                              "config": {
-                                  "file": "C:\\SnapLogs\\snap-sysinternals-file.log"
-                              }
-                          }
-                      ]
-                  }
-              ]
-          }
-      }
-  }
-  ```
-  ```
-  snaptel.exe task create -t sysinternal-file.yaml
-  ```
-  
-12. Enjoy!
+3. Enjoy!
 
 ## Documentation
 ### Collected Metrics
@@ -104,5 +84,80 @@ Namespace | Description
 /intel/sysinternals/processCount | gets the number of processes
 /intel/sysinternals/threadCount | gets the number of threads
 
+### Examples
+
+Load perfmon plugin
+```
+$ snaptel plugin load snap-plugin-collector-sysinternals
+Plugin loaded
+Name: sysinternals-collector
+Version: 1
+Type: collector
+Signed: false
+Loaded Time: Mon, 20 Feb 2017 11:17:17 MST
+```
+See available metrics for your system
+```
+$ snaptel metric list
+```
+
+Run the plugin using a task manifest file (the below example uses the Snap mock file plugin to output the data to a text file)
+```
+{ 
+    "version": 1,
+    "schedule": {
+        "type": "simple",
+        "interval": "30s"
+    },
+    "max-failures": 10,
+    "workflow": {
+        "collect": {
+            "metrics": {
+                "/intel/sysinternals/handleCount": {},
+                "/intel/sysinternals/processCount": {},
+                "/intel/sysinternals/threadCount": {}
+            },
+            "process": [
+                {
+                    "plugin_name": "passthru-grpc",
+                    "process": null,
+                    "publish": [
+                        {
+                            "plugin_name": "mock-file-grpc",
+                            "config": {
+                                "file": "C:\\SnapLogs\\snap-sysinternals-file.log"
+                            }
+                        }
+                    ]
+                
+            ]
+        }
+    }
+}
+```
+Create task:
+```
+snaptel.exe task create -t sysinternal-file.yaml
+```
+Stop task (use the task ID that was given the the task was initially created):
+```
+snaptel.exe task stop 4a156b0f-582f-4a13-8d67-120a2ba72e1d
+Task stopped:
+ID: 4a156b0f-582f-4a13-8d67-120a2ba72e1d
+```
+
 ## Community Support
 This repository is one of **many** plugins in **Snap**, a powerful telemetry framework. See the full project at http://github.com/intelsdi-x/snap To reach out to other users, head to the [main framework](https://github.com/intelsdi-x/snap#community-support)
+
+## Contributing
+We love contributions!
+
+There's more than one way to give back, from examples to blogs to code updates. See our recommended process in [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## License
+[Snap](http://github.com:intelsdi-x/snap), along with this plugin, is an Open Source software released under the Apache 2.0 [License](LICENSE).
+
+## Acknowledgements
+* Author: [@meinfield](https://github.com/meinfield/)
+
+And **thank you!** Your contribution, through code and participation, is incredibly important to us.
