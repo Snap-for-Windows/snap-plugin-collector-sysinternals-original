@@ -10,9 +10,8 @@ This Snap plugin collects a few metrics using pslist.exe (# of processes, thread
   * [Examples](#examples)
 3. [Community Support](#community-support)
 4. [Contributing](#contributing)
-5. [Known Issues](#known-issues)
-6. [License](#license-and-authors)
-7. [Acknowledgements](#acknowledgements)
+5. [License](#license-and-authors)
+6. [Acknowledgements](#acknowledgements)
 
 ## Getting Started
 
