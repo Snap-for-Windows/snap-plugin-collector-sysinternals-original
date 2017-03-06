@@ -68,10 +68,15 @@ To build this plugin through the Snap github repository:
   ```
 
 2. Load the plugin through snaptel.exe
-
-  ```
-  snaptel.exe plugin load snap-plugin-collector-sysinternals.exe
-  ```
+ ```
+ snaptel.exe plugin load snap-plugin-collector-sysinternals.exe
+ Plugin loaded
+ Name: sysinternals-collector
+ Version: 1
+ Type: collector
+ Signed: false
+ Loaded Time: Mon, 20 Feb 2017 11:17:17 MST
+ ```
 
 3. Enjoy!
 
@@ -87,19 +92,11 @@ Namespace | Description
 
 ### Examples
 
-Load perfmon plugin
-```
-$ snaptel plugin load snap-plugin-collector-sysinternals
-Plugin loaded
-Name: sysinternals-collector
-Version: 1
-Type: collector
-Signed: false
-Loaded Time: Mon, 20 Feb 2017 11:17:17 MST
-```
+Load sysinternals plugin
+
 See available metrics for your system
 ```
-$ snaptel metric list
+snaptel.exe metric list
 ```
 
 Run the plugin using a task manifest file (the below example uses the Snap mock file plugin to output the data to a text file)
